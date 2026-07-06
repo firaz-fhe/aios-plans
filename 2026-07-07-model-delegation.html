@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>plan · model delegation system — aios</title>
+<style>
+  :root {
+    --bg:#faf8f2; --card:#ffffff; --ink:#1c1b18; --body:#5a564d; --mut:#8f8b81;
+    --line:#e6e2d8; --green:#3f7d35; --green-soft:#eef6ea; --green-line:#cfe5c8;
+    --orange:#c47a2b; --mono:"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:var(--sans); line-height:1.6; }
+  .wrap { max-width:720px; margin:0 auto; padding:32px 20px 80px; }
+  .kicker { font-family:var(--mono); font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--green); }
+  h1 { font-size:clamp(28px,6vw,42px); font-weight:600; letter-spacing:-.03em; line-height:1.1; margin:10px 0 14px; }
+  h2 { font-size:clamp(20px,4.5vw,26px); font-weight:600; letter-spacing:-.02em; margin:44px 0 6px; }
+  h2 .n { font-family:var(--mono); font-size:14px; color:var(--green); margin-right:8px; }
+  p.lead { color:var(--body); font-size:17px; }
+  p, li { color:var(--body); font-size:15px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px 20px; margin:14px 0; box-shadow:0 8px 24px -18px rgba(28,27,24,.12); }
+  .tag { display:inline-block; font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; background:var(--green-soft); border:1px solid var(--green-line); color:var(--green); border-radius:99px; padding:3px 10px; margin-bottom:8px; }
+  .tldr { background:var(--green-soft); border:1px solid var(--green-line); border-radius:14px; padding:18px 20px; margin:20px 0; }
+  .tldr b { color:var(--ink); }
+  table { width:100%; border-collapse:collapse; font-size:13.5px; margin:10px 0; }
+  th { font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--mut); text-align:left; padding:8px 8px; border-bottom:1px solid var(--line); }
+  td { padding:9px 8px; border-bottom:1px solid var(--line); color:var(--body); vertical-align:top; }
+  td b { color:var(--ink); font-weight:600; }
+  .score { font-family:var(--mono); white-space:nowrap; }
+  ul { padding-left:20px; margin:8px 0; }
+  li { margin:5px 0; }
+  code { font-family:var(--mono); font-size:12.5px; background:#f1efe8; border-radius:5px; padding:2px 6px; color:#33312c; }
+  .steps { counter-reset:s; }
+  .step { display:flex; gap:14px; margin:12px 0; }
+  .step .num { flex-shrink:0; width:28px; height:28px; border-radius:99px; background:var(--green); color:#fff; font-family:var(--mono); font-size:13px; display:flex; align-items:center; justify-content:center; margin-top:2px; }
+  .step h3 { font-size:16px; font-weight:600; }
+  .step p { font-size:14px; }
+  .eta { font-family:var(--mono); font-size:11px; color:var(--mut); }
+  .warn { border-left:3px solid var(--orange); padding-left:14px; margin:14px 0; }
+  .warn b { color:var(--orange); }
+  .footer { margin-top:56px; padding-top:18px; border-top:1px solid var(--line); font-family:var(--mono); font-size:12px; color:var(--mut); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+  .dot { color:var(--green); }
+  .phasehead { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="kicker">aios plan · 07 jul 2026</p>
+  <h1>the model delegation system</h1>
+  <p class="lead">fable-5 stops doing everything itself. it becomes the director — planning, judging, and shipping — while cheaper models do the heavy lifting. same output quality, a fraction of the usage.</p>
+
+  <div class="tldr">
+    <b>tl;dr —</b> we teach every aios surface (terminal, discord, superapp, subagents) a <b>routing table</b>: fable-5 orchestrates on <b>high</b> effort, gpt-5.5 (codex — basically free on your sub) does bulk/token-heavy work, opus-4-8 handles taste-sensitive middleweight tasks. rules live in CLAUDE.md, mechanics live in 3 skills, guardrails watch usage. expected: <b>50–70% usage cut</b>, fewer session-limit lockouts like tonight's.
+  </div>
+
+  <h2><span class="n">00</span>why now</h2>
+  <div class="card">
+    <ul>
+      <li>yesterday alone burned a big slice of the weekly cap — and you hit <b>session limits twice in one day</b> (16:04, 00:13)</li>
+      <li>7-day burn is ~<b>$2k api-equivalent</b> on the gmail sub; fable-5 does everything including grunt work it's overqualified for</li>
+      <li>meanwhile your <b>codex sub sits nearly idle</b> — and its limits are famously hard to exhaust</li>
+      <li>account failover (shipped tonight) stops the bleeding; delegation stops the wound</li>
+    </ul>
+  </div>
+
+  <h2><span class="n">01</span>the routing table</h2>
+  <p>goes in the global CLAUDE.md — scored the way theo scores his, tuned to our stack. <b>defaults, not limits:</b> the model has standing permission to escalate when output quality misses the bar. judge the output, not the price tag.</p>
+  <div class="card">
+    <table>
+      <tr><th>model</th><th class="score">cost</th><th class="score">intel</th><th class="score">taste</th><th>use for</th></tr>
+      <tr><td><b>fable-5</b> (high)</td><td class="score">2/10</td><td class="score">10</td><td class="score">10</td><td>orchestration, architecture, final review, anything user-facing that ships</td></tr>
+      <tr><td><b>opus-4-8</b></td><td class="score">5/10</td><td class="score">8</td><td class="score">8</td><td>middleweight implementation, ui/copy when fable is busy</td></tr>
+      <tr><td><b>sonnet-4-6</b> (low)</td><td class="score">7/10</td><td class="score">6</td><td class="score">6</td><td>wrapper agents, glue tasks, spawning codex inside workflows</td></tr>
+      <tr><td><b>gpt-5.5</b> (codex)</td><td class="score">9/10</td><td class="score">9</td><td class="score">4</td><td>bulk mechanical work: log digging, big pdf/spec reading, migrations, data analysis, independent second-opinion reviews</td></tr>
+      <tr><td><b>haiku</b></td><td class="score">—</td><td class="score">—</td><td class="score">—</td><td>never. codex is effectively free and much smarter.</td></tr>
+    </table>
+    <p style="font-size:13px"><b>glossary (also goes in CLAUDE.md):</b> <i>intelligence</i> = how hard a problem the model handles unsupervised · <i>taste</i> = ui/ux, code quality, api design, copy — the things firaz would rewrite if wrong.</p>
+  </div>
+  <div class="warn"><b>effort rule:</b> fable-5 stays on <b>high</b>. never xhigh/max/ultra by default — they overthink per-step, produce overdone diffs, and are the #1 cause of blown usage. effort ≠ how long it can work; it's thinking per step.</div>
+
+  <h2><span class="n">02</span>the delegation rules</h2>
+  <div class="card">
+    <ul>
+      <li><b>bulk + token-heavy → codex:</b> reading huge logs, giant pdfs, spreadsheets, codebase archaeology, clear-spec implementations, migrations</li>
+      <li><b>second-perspective reviews → codex:</b> independent review of diffs/plans before shipping — different model family = different blind spots</li>
+      <li><b>anything that ships to a human → taste ≥ 8:</b> fable or opus writes/edits final ui, copy, api surfaces</li>
+      <li><b>escalate freely:</b> if a cheap model's output misses the bar, redo with a smarter one <i>without asking</i> — escalating costs less than shipping mediocre work</li>
+      <li><b>inside workflows:</b> claude-only models can be workflow agents, so a <code>sonnet(low)</code> wrapper spawns codex, collects results, reports back — labeled with a <code>[5.5]</code> prefix so we can see delegation live</li>
+    </ul>
+  </div>
+
+  <h2><span class="n">03</span>build phases</h2>
+  <div class="steps">
+    <div class="step"><div class="num">1</div><div>
+      <h3>routing rules → CLAUDE.md <span class="eta">~1h · today</span></h3>
+      <p>routing table + glossary + effort rule + escalation policy into the global <code>~/CLAUDE.md</code> (thin) and aios CLAUDE.md. every claude session — terminal, discord, superapp — inherits it instantly. iterate the file every time routing gets something wrong (theo's append-on-failure loop).</p>
+    </div></div>
+    <div class="step"><div class="num">2</div><div>
+      <h3>three codex skills <span class="eta">~2h · today</span></h3>
+      <p><code>codex-investigate</code> (read-only <code>codex exec</code> for logs/pdfs/data — the biggest usage saver), <code>codex-review</code> (independent review of a diff/plan → report file → fable verifies claims before presenting), <code>codex-implement</code> (clear-spec builds on a branch, fable reviews before merge). each skill carries the exact commands + a "prompt codex simply — it's not claude" section.</p>
+    </div></div>
+    <div class="step"><div class="num">3</div><div>
+      <h3>bridge + superapp wiring <span class="eta">~1h</span></h3>
+      <p>discord bridge already has codex + claude adapters and per-message model switching. add: delegation-aware system prompt (so bridge-me routes like terminal-me), and surface <code>[5.5]</code>-prefixed subagent labels in progress emojis. superapp inherits via CLAUDE.md — zero shell changes.</p>
+    </div></div>
+    <div class="step"><div class="num">4</div><div>
+      <h3>usage guardrails <span class="eta">~1h</span></h3>
+      <p>the usage helper already reads both meters. add a soft rule: <b>gmail weekly &gt; 60% → delegation gets aggressive</b> (codex-first for everything non-shipping); &gt; 85% → fable only orchestrates. plus tonight's account failover (gmail ↔ fhe) as the last line. optional later: auto-nudge in discord when a day burns &gt; 20% of the week.</p>
+    </div></div>
+    <div class="step"><div class="num">5</div><div>
+      <h3>measure <span class="eta">ongoing</span></h3>
+      <p>the activity ledger already logs both tools. weekly line in the sunday pulse: fable tokens vs codex tokens vs % weekly caps used. success = weekly gmail cap under 50% with the same shipping volume.</p>
+    </div></div>
+  </div>
+
+  <h2><span class="n">04</span>what stays human</h2>
+  <div class="card">
+    <ul>
+      <li><b>you never think about routing</b> — you talk to me like always; delegation is my job</li>
+      <li>model overrides still work everywhere (<code>use opus</code>, <code>gpt 5.5</code> in discord, model picker in superapp)</li>
+      <li>one thing to watch week 1: if a delegated result ever feels off-brand or low-taste, say so — that feedback becomes a routing rule the same day</li>
+    </ul>
+  </div>
+
+  <h2><span class="n">05</span>costs & risks</h2>
+  <div class="card">
+    <table>
+      <tr><th>risk</th><th>mitigation</th></tr>
+      <tr><td>codex writes "typescript like a python dev"</td><td>taste-gated: codex output never ships without fable/opus review</td></tr>
+      <tr><td>delegation overhead on small tasks</td><td>rules only trigger on token-heavy or bulk work; quick replies stay direct</td></tr>
+      <tr><td>codex CLI auth/limits</td><td>usage helper already tracks the codex meter; failover to sonnet if codex is down</td></tr>
+      <tr><td>subagent sprawl (22 live sessions tonight…)</td><td>workflows over ad-hoc spawns for batch work; ledger keeps visibility</td></tr>
+    </table>
+  </div>
+
+  <div class="tldr">
+    <b>decision needed:</b> approve phases 1–2 today (routing rules + skills, ~3h of my time, zero risk — it's all instructions), 3–4 tomorrow. reply <b>"go"</b> and phase 1 starts immediately.
+  </div>
+
+  <div class="footer">
+    <span>aios<span class="dot">.</span> internal plan</span>
+    <span>fable-5 · drafted 07 jul 2026, 6am, obviously</span>
+  </div>
+
+</div>
+</body>
+</html>
