@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>aihlete — your ai co-founder</title>
+<style>
+  :root {
+    --bg: #0d0d10;
+    --bg-elev: #141419;
+    --bg-elev-2: #1a1a20;
+    --border: #26262c;
+    --border-soft: #1f1f25;
+    --text: #ececf1;
+    --text-dim: #9a9aa5;
+    --text-faint: #6a6a75;
+    --accent: #f97316;
+    --accent-soft: rgba(249, 115, 22, 0.12);
+    --accent-border: rgba(249, 115, 22, 0.35);
+    --wa: #25D366;
+    --wa-soft: rgba(37, 211, 102, 0.12);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --sidebar-w: 264px;
+    --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow: hidden;
+  }
+
+  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+  input, textarea { font-family: inherit; }
+  ::selection { background: var(--accent-soft); }
+
+  /* scrollbars */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #2c2c34; border-radius: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  /* ---------- app shell ---------- */
+  .app {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr;
+    height: 100dvh;
+    width: 100%;
+  }
+
+  /* ---------- sidebar ---------- */
+  .sidebar {
+    background: var(--bg-elev);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 14px 12px;
+    gap: 12px;
+    min-height: 0;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 6px 6px 2px;
+  }
+  .brand .mark {
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), #fb923c);
+    display: grid; place-items: center;
+    color: #0d0d10;
+    flex: none;
+  }
+  .brand .word {
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: -0.02em;
+  }
+  .brand .word b { color: var(--accent); font-weight: 700; }
+
+  .new-chat {
+    display: flex; align-items: center; gap: 8px;
+    justify-content: center;
+    width: 100%;
+    background: var(--accent);
+    color: #0d0d10;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    transition: filter .15s ease, transform .05s ease;
+  }
+  .new-chat:hover { filter: brightness(1.07); }
+  .new-chat:active { transform: translateY(1px); }
+
+  .hist {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 2px;
+  }
+  .hist-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    padding: 8px 8px 4px;
+  }
+  .hist-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 9px 8px;
+    border-radius: var(--radius-sm);
+    color: var(--text-dim);
+    font-size: 13.5px;
+    text-align: left;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background .12s ease, color .12s ease;
+  }
+  .hist-item svg { flex: none; opacity: .55; }
+  .hist-item:hover { background: var(--bg-elev-2); color: var(--text); }
+  .hist-item.active { background: var(--bg-elev-2); color: var(--text); }
+  .hist-item span { overflow: hidden; text-overflow: ellipsis; }
+
+  .credits {
+    border: 1px solid var(--border);
+    background: var(--bg-elev-2);
+    border-radius: var(--radius-sm);
+    padding: 11px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .credits .row {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .credits .label { font-size: 12px; color: var(--text-dim); display:flex; align-items:center; gap:6px; }
+  .credits .count {
+    font-size: 12px; font-weight: 700; color: var(--accent);
+    background: var(--accent-soft); border: 1px solid var(--accent-border);
+    padding: 2px 8px; border-radius: 999px;
+  }
+  .credits .bar {
+    height: 5px; border-radius: 999px; background: #26262c; overflow: hidden;
+  }
+  .credits .bar i {
+    display: block; height: 100%; background: linear-gradient(90deg, var(--accent), #fb923c);
+    transition: width .4s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* ---------- main ---------- */
+  .main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    position: relative;
+  }
+
+  .topbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-soft);
+    background: rgba(13,13,16,.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 5;
+  }
+  .hamburger {
+    display: none;
+    width: 38px; height: 38px; border-radius: 10px;
+    border: 1px solid var(--border);
+    align-items: center; justify-content: center;
+    color: var(--text-dim);
+  }
+  .hamburger:hover { background: var(--bg-elev); color: var(--text); }
+  .topbar .title {
+    font-size: 14px; color: var(--text-dim); font-weight: 500;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .topbar .title .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--wa); box-shadow: 0 0 8px var(--wa); }
+  .topbar .spacer { flex: 1; }
+
+  .login-btn {
+    display: flex; align-items: center; gap: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-elev);
+    color: var(--text);
+    font-size: 13.5px; font-weight: 500;
+    padding: 8px 13px;
+    border-radius: 999px;
+    transition: border-color .15s, background .15s;
+  }
+  .login-btn:hover { border-color: var(--accent-border); background: var(--bg-elev-2); }
+  .login-btn .spark { color: var(--accent); }
+
+  /* ---------- chat thread ---------- */
+  .thread-wrap {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+  }
+  .thread {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 26px 20px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* empty hero */
+  .hero {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 20px;
+    gap: 26px;
+  }
+  .hero .halo {
+    width: 60px; height: 60px; border-radius: 18px;
+    background: linear-gradient(135deg, var(--accent), #fb923c);
+    display: grid; place-items: center; color: #0d0d10;
+    box-shadow: 0 12px 40px -12px rgba(249,115,22,.6);
+  }
+  .hero h1 {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+  }
+  .hero p.sub { color: var(--text-dim); font-size: 15px; max-width: 420px; }
+  .chips { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 480px; }
+  .chip {
+    text-align: left;
+    border: 1px solid var(--border);
+    background: var(--bg-elev);
+    border-radius: 14px;
+    padding: 13px 15px;
+    font-size: 14px;
+    color: var(--text);
+    display: flex; align-items: center; gap: 11px;
+    transition: border-color .15s, background .15s, transform .05s;
+  }
+  .chip:hover { border-color: var(--accent-border); background: var(--bg-elev-2); }
+  .chip:active { transform: translateY(1px); }
+  .chip .ico { color: var(--accent); flex: none; opacity: .9; }
+  .chip .arr { margin-left: auto; color: var(--text-faint); flex: none; }
+
+  /* messages */
+  .msg { display: flex; gap: 12px; align-items: flex-start; }
+  .msg .avatar {
+    width: 30px; height: 30px; border-radius: 9px; flex: none;
+    display: grid; place-items: center; font-size: 13px; font-weight: 700;
+  }
+  .msg.user { flex-direction: row-reverse; }
+  .msg.user .avatar { background: #2a2a32; color: var(--text-dim); }
+  .msg.ai .avatar { background: linear-gradient(135deg, var(--accent), #fb923c); color: #0d0d10; }
+
+  .bubble {
+    max-width: 86%;
+    padding: 11px 14px;
+    border-radius: 16px;
+    font-size: 14.5px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .msg.user .bubble {
+    background: var(--accent);
+    color: #16160f;
+    border-bottom-right-radius: 6px;
+    font-weight: 500;
+  }
+  .msg.ai .bubble {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-bottom-left-radius: 6px;
+  }
+  .msg.ai .bubble strong { color: #fff; }
+  .msg.ai .bubble .hl { color: var(--accent); font-weight: 600; }
+
+  /* typing */
+  .typing { display: inline-flex; gap: 4px; padding: 4px 2px; align-items: center; }
+  .typing i {
+    width: 7px; height: 7px; border-radius: 999px; background: var(--text-faint);
+    animation: blink 1.2s infinite ease-in-out;
+  }
+  .typing i:nth-child(2) { animation-delay: .18s; }
+  .typing i:nth-child(3) { animation-delay: .36s; }
+  @keyframes blink { 0%,80%,100%{opacity:.25; transform: translateY(0);} 40%{opacity:1; transform: translateY(-2px);} }
+
+  .cursor { display:inline-block; width:7px; height:15px; background:var(--accent); margin-left:2px; vertical-align:-2px; animation: caret .8s step-end infinite; border-radius:1px;}
+  @keyframes caret { 50%{opacity:0;} }
+
+  /* ---------- composer ---------- */
+  .composer-wrap {
+    padding: 10px 20px calc(16px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--bg) 55%, transparent);
+  }
+  .composer {
+    max-width: 760px;
+    margin: 0 auto;
+    border: 1px solid var(--border);
+    background: var(--bg-elev);
+    border-radius: 20px;
+    padding: 8px 8px 8px 8px;
+    box-shadow: 0 10px 30px -18px rgba(0,0,0,.9);
+    transition: border-color .15s;
+  }
+  .composer:focus-within { border-color: var(--accent-border); }
+  .composer .field {
+    display: flex; align-items: flex-end; gap: 8px;
+  }
+  .composer textarea {
+    flex: 1;
+    resize: none;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.5;
+    padding: 8px 6px 6px 10px;
+    max-height: 160px;
+    min-height: 24px;
+  }
+  .composer textarea::placeholder { color: var(--text-faint); }
+  .send-btn {
+    width: 38px; height: 38px; border-radius: 12px; flex: none;
+    background: var(--accent); color: #0d0d10;
+    display: grid; place-items: center;
+    transition: filter .15s, opacity .15s, transform .05s;
+  }
+  .send-btn:hover { filter: brightness(1.08); }
+  .send-btn:active { transform: translateY(1px); }
+  .send-btn:disabled { opacity: .4; cursor: default; }
+
+  .composer .meta {
+    display: flex; align-items: center; gap: 8px;
+    padding: 2px 4px 2px 6px;
+    margin-top: 2px;
+  }
+  .composer .meta .model-label { font-size: 12px; color: var(--text-dim); }
+  .composer .meta .model-label b { color: var(--text); font-weight: 600; }
+  .composer .meta .spacer { flex: 1; }
+  .composer .meta .hint { font-size: 11.5px; color: var(--text-faint); }
+
+  /* model picker */
+  .picker { position: relative; }
+  .picker-btn {
+    display: flex; align-items: center; gap: 7px;
+    border: 1px solid var(--border);
+    background: var(--bg-elev-2);
+    border-radius: 999px;
+    padding: 6px 10px 6px 11px;
+    font-size: 12.5px; color: var(--text);
+    font-weight: 500;
+    transition: border-color .15s;
+  }
+  .picker-btn:hover { border-color: var(--accent-border); }
+  .picker-btn .badge { font-size: 9.5px; }
+
+  .badge {
+    font-size: 9px; font-weight: 700; letter-spacing: .04em;
+    padding: 2px 6px; border-radius: 999px; text-transform: uppercase;
+  }
+  .badge.free { background: rgba(37,211,102,.14); color: #4ade80; border:1px solid rgba(37,211,102,.3); }
+  .badge.pro { background: var(--accent-soft); color: var(--accent); border:1px solid var(--accent-border); display:inline-flex; align-items:center; gap:3px; }
+
+  .picker-menu {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    width: 268px;
+    background: var(--bg-elev-2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 6px;
+    box-shadow: 0 20px 50px -12px rgba(0,0,0,.8);
+    opacity: 0; transform: translateY(6px) scale(.98);
+    pointer-events: none;
+    transition: opacity .15s, transform .15s;
+    z-index: 20;
+  }
+  .picker.open .picker-menu { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+  .picker-group-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--text-faint); padding: 8px 10px 4px; font-weight: 600;
+  }
+  .picker-opt {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 9px 10px; border-radius: 10px; text-align: left;
+    font-size: 13.5px; color: var(--text);
+    transition: background .12s;
+  }
+  .picker-opt:hover { background: #24242c; }
+  .picker-opt .name { flex: 1; }
+  .picker-opt .check { color: var(--accent); opacity: 0; flex:none; }
+  .picker-opt.selected .check { opacity: 1; }
+  .picker-opt .dotico { width:8px; height:8px; border-radius:999px; flex:none; }
+
+  /* ---------- WA capture card ---------- */
+  .wa-card {
+    max-width: 760px; margin: 0 auto;
+    border: 1px solid rgba(37,211,102,.3);
+    background: linear-gradient(180deg, rgba(37,211,102,.06), var(--bg-elev));
+    border-radius: 20px;
+    padding: 18px;
+    display: flex; flex-direction: column; gap: 13px;
+  }
+  .wa-card .head { display:flex; align-items:center; gap:10px; }
+  .wa-card .waico {
+    width: 34px; height: 34px; border-radius: 10px; flex:none;
+    background: var(--wa); color: #0d0d10; display:grid; place-items:center;
+  }
+  .wa-card h3 { font-size: 15.5px; font-weight: 700; letter-spacing:-.01em; }
+  .wa-card p { font-size: 13px; color: var(--text-dim); }
+  .wa-card .inrow { display:flex; gap: 9px; }
+  .wa-card input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 11px 13px;
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+  }
+  .wa-card input:focus { border-color: var(--wa); }
+  .wa-card input::placeholder { color: var(--text-faint); }
+  .wa-cta {
+    display:flex; align-items:center; gap:8px; justify-content:center;
+    background: var(--wa); color: #0d2a15;
+    font-weight: 700; font-size: 14px;
+    padding: 11px 16px; border-radius: 12px; flex:none;
+    transition: filter .15s, transform .05s;
+  }
+  .wa-cta:hover { filter: brightness(1.06); }
+  .wa-cta:active { transform: translateY(1px); }
+
+  /* ---------- modal ---------- */
+  .scrim {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.62);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center;
+    padding: 20px; z-index: 100;
+  }
+  .scrim.open { display: flex; animation: fade .18s ease; }
+  @keyframes fade { from{opacity:0;} to{opacity:1;} }
+
+  .modal {
+    width: 100%; max-width: 440px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 22px;
+    animation: pop .22s cubic-bezier(.2,.9,.3,1.1);
+  }
+  @keyframes pop { from{opacity:0; transform: translateY(12px) scale(.97);} to{opacity:1; transform:none;} }
+  .modal .mtop { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .modal h2 { font-size: 19px; font-weight: 700; letter-spacing:-.02em; }
+  .modal .msub { font-size: 13.5px; color: var(--text-dim); margin-top: 4px; }
+  .modal .x {
+    width: 32px; height: 32px; border-radius: 9px; flex:none;
+    display:grid; place-items:center; color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+  .modal .x:hover { background: var(--bg-elev-2); color: var(--text); }
+
+  .opt-rows { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+  .opt-row {
+    display:flex; align-items:center; gap: 13px; width:100%;
+    border: 1px solid var(--border);
+    background: var(--bg-elev-2);
+    border-radius: 14px;
+    padding: 14px;
+    text-align: left;
+    transition: border-color .15s, background .15s, transform .05s;
+  }
+  .opt-row:hover { border-color: var(--accent-border); background: #1e1e25; }
+  .opt-row:active { transform: translateY(1px); }
+  .opt-row .oico {
+    width: 40px; height: 40px; border-radius: 11px; flex:none;
+    display:grid; place-items:center; background: var(--bg); border:1px solid var(--border);
+  }
+  .opt-row .otext { flex:1; min-width:0; }
+  .opt-row .otext .ttl { font-size: 14.5px; font-weight: 600; }
+  .opt-row .otext .desc { font-size: 12px; color: var(--text-dim); margin-top:1px; }
+  .opt-row .go { color: var(--text-faint); flex:none; }
+  .opt-row:hover .go { color: var(--accent); }
+
+  .modal-div {
+    display:flex; align-items:center; gap:12px; margin: 18px 0 14px;
+    color: var(--text-faint); font-size: 11.5px; text-transform: uppercase; letter-spacing:.06em;
+  }
+  .modal-div::before, .modal-div::after { content:""; flex:1; height:1px; background: var(--border); }
+  .free-link {
+    display:block; width:100%; text-align:center;
+    color: var(--text-dim); font-size: 13.5px; padding: 8px;
+    border-radius: 10px; transition: color .15s, background .15s;
+  }
+  .free-link:hover { color: var(--text); background: var(--bg-elev-2); }
+  .free-link b { color: var(--accent); font-weight:600; }
+
+  /* ---------- toast ---------- */
+  .toast-wrap {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(120px + env(safe-area-inset-bottom));
+    z-index: 200; display:flex; flex-direction: column; gap: 8px; align-items:center;
+    pointer-events: none;
+  }
+  .toast {
+    background: var(--bg-elev-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 13px;
+    padding: 10px 15px; border-radius: 999px;
+    display:flex; align-items:center; gap: 8px;
+    box-shadow: 0 12px 30px -10px rgba(0,0,0,.7);
+    animation: toastIn .25s ease, toastOut .3s ease 2.1s forwards;
+  }
+  .toast .tico { color: var(--wa); display:flex; }
+  @keyframes toastIn { from{opacity:0; transform: translateY(10px);} to{opacity:1;} }
+  @keyframes toastOut { to{opacity:0; transform: translateY(10px);} }
+
+  /* ---------- mobile ---------- */
+  .drawer-scrim { display:none; }
+  @media (max-width: 768px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar {
+      position: fixed; top:0; left:0; bottom:0;
+      width: 82%; max-width: 300px;
+      z-index: 60;
+      transform: translateX(-104%);
+      transition: transform .22s cubic-bezier(.4,0,.2,1);
+      padding-top: calc(14px + env(safe-area-inset-top));
+    }
+    .app.drawer-open .sidebar { transform: translateX(0); }
+    .drawer-scrim {
+      position: fixed; inset:0; background: rgba(0,0,0,.5); z-index: 55;
+      opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    .app.drawer-open .drawer-scrim { display:block; opacity:1; pointer-events:auto; }
+    .hamburger { display: flex; }
+    .topbar { padding-top: calc(12px + env(safe-area-inset-top)); }
+    .hero h1 { font-size: 25px; }
+    .bubble { max-width: 90%; }
+    .login-btn span.lt { display:none; }
+    .login-btn { padding: 8px; }
+    .wa-card .inrow { flex-direction: column; }
+    .picker-menu { width: 250px; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- drawer scrim (mobile) -->
+  <div class="drawer-scrim" id="drawerScrim"></div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="mark">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 6.4L21 11l-6.6 2.6L12 20l-2.4-6.4L3 11l6.6-2.6L12 2z" fill="currentColor"/></svg>
+      </span>
+      <span class="word">aih<b>lete</b></span>
+    </div>
+
+    <button class="new-chat" id="newChat">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      new chat
+    </button>
+
+    <nav class="hist">
+      <div class="hist-label">recent</div>
+      <button class="hist-item active">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>automate my invoices</span>
+      </button>
+      <button class="hist-item">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>wa auto-reply setup</span>
+      </button>
+      <button class="hist-item">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>score my new leads</span>
+      </button>
+    </nav>
+
+    <div class="credits">
+      <div class="row">
+        <span class="label">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 6.4L21 11l-6.6 2.6L12 20l-2.4-6.4L3 11l6.6-2.6z"/></svg>
+          free messages
+        </span>
+        <span class="count" id="creditCount">5</span>
+      </div>
+      <div class="bar"><i id="creditBar" style="width:100%"></i></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <section class="main">
+    <header class="topbar">
+      <button class="hamburger" id="hamburger" aria-label="menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="title"><span class="dot"></span> aios · demo</div>
+      <div class="spacer"></div>
+      <button class="login-btn" id="loginBtn">
+        <span class="spark">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3m0 12v3m9-9h-3M6 12H3m14.5-6.5l-2 2m-7 7l-2 2m11 0l-2-2m-7-7l-2-2"/></svg>
+        </span>
+        <span class="lt">login with your ai</span>
+      </button>
+    </header>
+
+    <div class="thread-wrap" id="threadWrap">
+      <!-- hero (empty state) -->
+      <div class="hero" id="hero">
+        <div class="halo">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 6.4L21 11l-6.6 2.6L12 20l-2.4-6.4L3 11l6.6-2.6L12 2z" fill="currentColor"/></svg>
+        </div>
+        <div>
+          <h1>your ai co-founder.<br/>try it now.</h1>
+          <p class="sub">not a chatbot. a business partner that drafts the reply, plans the week, and chases the invoice — in your voice.</p>
+        </div>
+        <div class="chips" id="chips">
+          <button class="chip" data-prompt="draft a whatsapp reply that closes a sale">
+            <span class="ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>
+            draft a whatsapp reply that closes a sale
+            <span class="arr"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg></span>
+          </button>
+          <button class="chip" data-prompt="plan my week from these 5 tasks">
+            <span class="ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+            plan my week from these 5 tasks
+            <span class="arr"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg></span>
+          </button>
+          <button class="chip" data-prompt="write an invoice follow-up that gets paid">
+            <span class="ico"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 18v-6M9 15h6"/></svg></span>
+            write an invoice follow-up that gets paid
+            <span class="arr"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- thread -->
+      <div class="thread" id="thread" style="display:none"></div>
+    </div>
+
+    <!-- COMPOSER -->
+    <div class="composer-wrap" id="composerWrap">
+      <div class="composer" id="composer">
+        <div class="field">
+          <textarea id="input" rows="1" placeholder="message your co-founder..."></textarea>
+          <button class="send-btn" id="sendBtn" disabled aria-label="send">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+          </button>
+        </div>
+        <div class="meta">
+          <div class="picker" id="picker">
+            <button class="picker-btn" id="pickerBtn">
+              <span class="dotico" style="background:#4ade80"></span>
+              <span id="pickerName">DeepSeek V3</span>
+              <span id="pickerBadge" class="badge free">free</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="picker-menu" id="pickerMenu">
+              <div class="picker-group-label">free · always free</div>
+              <button class="picker-opt selected" data-model="DeepSeek V3" data-tier="free" data-color="#4ade80">
+                <span class="dotico" style="background:#4ade80"></span>
+                <span class="name">DeepSeek V3</span>
+                <span class="badge free">free</span>
+                <span class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></span>
+              </button>
+              <button class="picker-opt" data-model="Llama 4 Maverick" data-tier="free" data-color="#4ade80">
+                <span class="dotico" style="background:#4ade80"></span>
+                <span class="name">Llama 4 Maverick</span>
+                <span class="badge free">free</span>
+                <span class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></span>
+              </button>
+              <button class="picker-opt" data-model="Gemini Flash" data-tier="free" data-color="#4ade80">
+                <span class="dotico" style="background:#4ade80"></span>
+                <span class="name">Gemini Flash</span>
+                <span class="badge free">free</span>
+                <span class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></span>
+              </button>
+              <div class="picker-group-label">premium · 5 free msgs</div>
+              <button class="picker-opt" data-model="GPT-5.5" data-tier="pro" data-color="#f97316">
+                <span class="dotico" style="background:#f97316"></span>
+                <span class="name">GPT-5.5</span>
+                <span class="badge pro"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>pro</span>
+                <span class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></span>
+              </button>
+              <button class="picker-opt" data-model="Claude Fable 5" data-tier="pro" data-color="#f97316">
+                <span class="dotico" style="background:#f97316"></span>
+                <span class="name">Claude Fable 5</span>
+                <span class="badge pro"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>pro</span>
+                <span class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></span>
+              </button>
+            </div>
+          </div>
+          <div class="model-label" style="display:none"></div>
+          <div class="spacer"></div>
+          <div class="hint">enter to send · shift+enter for newline</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="scrim" id="loginScrim">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="mtop">
+      <div>
+        <h2>login with your ai</h2>
+        <p class="msub">bring your own subscription. no limits, no new bill.</p>
+      </div>
+      <button class="x" id="modalClose" aria-label="close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="opt-rows">
+      <button class="opt-row">
+        <span class="oico" style="color:#f97316">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 6.4L21 11l-6.6 2.6L12 20l-2.4-6.4L3 11l6.6-2.6L12 2z" fill="currentColor"/></svg>
+        </span>
+        <span class="otext">
+          <span class="ttl">claude</span>
+          <span class="desc">use your own anthropic subscription, unlimited</span>
+        </span>
+        <span class="go"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg></span>
+      </button>
+      <button class="opt-row">
+        <span class="oico" style="color:#ececf1">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg>
+        </span>
+        <span class="otext">
+          <span class="ttl">codex / openai</span>
+          <span class="desc">use your own openai subscription, unlimited</span>
+        </span>
+        <span class="go"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg></span>
+      </button>
+      <button class="opt-row">
+        <span class="oico" style="color:#8b8bf5">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M13 6l-2 12"/></svg>
+        </span>
+        <span class="otext">
+          <span class="ttl">opencode</span>
+          <span class="desc">connect any local model, unlimited</span>
+        </span>
+        <span class="go"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg></span>
+      </button>
+    </div>
+
+    <div class="modal-div">or</div>
+    <button class="free-link" id="continueFree">no subscription? <b>continue free</b></button>
+  </div>
+</div>
+
+<!-- toast host -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- state ----------
+  var state = {
+    credits: 5,
+    model: { name: "DeepSeek V3", tier: "free", color: "#4ade80" },
+    started: false,
+    busy: false
+  };
+
+  // ---------- els ----------
+  var $ = function(id){ return document.getElementById(id); };
+  var app = $("app");
+  var threadWrap = $("threadWrap");
+  var thread = $("thread");
+  var hero = $("hero");
+  var input = $("input");
+  var sendBtn = $("sendBtn");
+  var composerWrap = $("composerWrap");
+
+  // ---------- canned replies ----------
+  var CANNED = [
+    {
+      match: ["whatsapp","wa reply","close","sale","closes a sale"],
+      text: "here's the reply. don't overthink it — assume the yes:\n\n" +
+        "\"hey [name] — glad this is a fit. to lock your spot i'll send the invoice now and we kick off monday. quick one: card or bank transfer? i'll have you set up in 5 min.\"\n\n" +
+        "why it works:\n" +
+        "• assumes the close — no \"are you interested?\" escape hatch\n" +
+        "• one small decision (card vs transfer), not the big scary yes\n" +
+        "• a deadline (monday) that costs them nothing to agree to\n\n" +
+        "want a softer version for a lead who's gone quiet, or a firmer one for someone stalling on price?"
+    },
+    {
+      match: ["plan my week","5 tasks","plan my","week from"],
+      text: "drop the 5 tasks and i'll sequence them. meanwhile here's the shape i'd use:\n\n" +
+        "mon — deep work block, hardest task first (before slack opens)\n" +
+        "tue — the task that unblocks someone else, so they're not waiting on you\n" +
+        "wed — the revenue task (chase, close, or ship the thing that gets paid)\n" +
+        "thu — batch the small admin stuff into one 90-min sweep\n" +
+        "fri — buffer + review, no new commitments\n\n" +
+        "the rule: only one \"big rock\" per day. everything else fills the cracks. paste your 5 and i'll slot them in."
+    },
+    {
+      match: ["invoice","follow-up","follow up","gets paid","payment","overdue"],
+      text: "here's the follow-up. polite, specific, hard to ignore:\n\n" +
+        "subject: invoice #[num] — quick nudge\n\n" +
+        "\"hi [name], hope things are good. just flagging invoice #[num] (rm[amount]) from [date] — looks like it's still open. if it's already scheduled, ignore this. if not, here's the link to settle in one tap: [link]. anything you need from my side to release it?\"\n\n" +
+        "the trick: give them a one-tap action + an easy out (\"if it's scheduled, ignore\"). removes the awkwardness, keeps the pressure.\n\n" +
+        "want the 2nd-reminder version for when this one goes unanswered?"
+    },
+    {
+      match: ["invoice automation","automate my invoice","automate invoices"],
+      text: "yep — this is the highest-leverage thing to automate. the flow:\n\n" +
+        "1. deal marked won → invoice auto-drafts from the quote (no retyping)\n" +
+        "2. sends on your letterhead + payment link\n" +
+        "3. unpaid at day 3 → soft nudge. day 7 → firmer one. all in your voice\n" +
+        "4. paid → receipt auto-fires, deal moves to \"active\"\n\n" +
+        "you touch nothing unless someone disputes. i can wire this to your whatsapp so the nudges go where clients actually read.\n\n" +
+        "what do you invoice on right now — spreadsheet, xero, sql account, something else?"
+    }
+  ];
+
+  var FALLBACK =
+    "got it. here's how i'd think about it as your co-founder, not just answer it:\n\n" +
+    "• what's the actual outcome you want — more replies, faster close, less admin?\n" +
+    "• what's the smallest version of this that ships today vs the polished one later?\n\n" +
+    "give me the raw details (the message, the numbers, the client) and i'll draft the real thing — not advice, the actual output you can send. that's the whole point of having me.";
+
+  function pickReply(text){
+    var t = text.toLowerCase();
+    for (var i=0;i<CANNED.length;i++){
+      var m = CANNED[i].match;
+      for (var j=0;j<m.length;j++){
+        if (t.indexOf(m[j]) !== -1) return CANNED[i].text;
+      }
+    }
+    return FALLBACK;
+  }
+
+  // ---------- helpers ----------
+  function scrollDown(){
+    threadWrap.scrollTop = threadWrap.scrollHeight;
+  }
+
+  function esc(s){
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  function addUser(text){
+    var el = document.createElement("div");
+    el.className = "msg user";
+    el.innerHTML = '<div class="avatar">you</div><div class="bubble">'+esc(text)+'</div>';
+    thread.appendChild(el);
+    scrollDown();
+  }
+
+  function aiAvatar(){
+    return '<div class="avatar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 6.4L21 11l-6.6 2.6L12 20l-2.4-6.4L3 11l6.6-2.6z" fill="currentColor"/></svg></div>';
+  }
+
+  function addTyping(){
+    var el = document.createElement("div");
+    el.className = "msg ai";
+    el.id = "typingMsg";
+    el.innerHTML = aiAvatar() + '<div class="bubble"><span class="typing"><i></i><i></i><i></i></span></div>';
+    thread.appendChild(el);
+    scrollDown();
+    return el;
+  }
+
+  function streamReply(text){
+    var typing = addTyping();
+    setTimeout(function(){
+      var bubble = typing.querySelector(".bubble");
+      bubble.innerHTML = '<span class="body"></span><span class="cursor"></span>';
+      var body = bubble.querySelector(".body");
+      var cursor = bubble.querySelector(".cursor");
+      var words = text.split(/(\s+)/); // keep whitespace tokens
+      var i = 0;
+      var acc = "";
+      (function tick(){
+        if (i >= words.length){
+          cursor.remove();
+          state.busy = false;
+          updateSendState();
+          return;
+        }
+        acc += words[i];
+        body.innerHTML = esc(acc);
+        i++;
+        scrollDown();
+        // vary speed a touch for realism
+        var delay = words[i-1] && /\n/.test(words[i-1]) ? 90 : 26 + Math.random()*34;
+        setTimeout(tick, delay);
+      })();
+    }, 1150 + Math.random()*400);
+  }
+
+  // ---------- send flow ----------
+  function ensureStarted(){
+    if (!state.started){
+      hero.style.display = "none";
+      thread.style.display = "flex";
+      state.started = true;
+    }
+  }
+
+  function toast(msg, wa){
+    var t = document.createElement("div");
+    t.className = "toast";
+    var ico = wa
+      ? '<span class="tico"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.9 5-1.3A10 10 0 1 0 12 2z"/></svg></span>'
+      : '<span class="tico" style="color:#f97316"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 6.4L21 11l-6.6 2.6L12 20l-2.4-6.4L3 11l6.6-2.6z"/></svg></span>';
+    t.innerHTML = ico + '<span>'+msg+'</span>';
+    $("toastWrap").appendChild(t);
+    setTimeout(function(){ t.remove(); }, 2600);
+  }
+
+  function updateCredits(){
+    $("creditCount").textContent = state.credits;
+    $("creditBar").style.width = (state.credits/5*100) + "%";
+    if (state.credits <= 0){
+      $("creditCount").textContent = "0";
+    }
+  }
+
+  function showWaCard(){
+    var card = document.createElement("div");
+    card.className = "wa-card";
+    card.innerHTML =
+      '<div class="head">' +
+        '<span class="waico"><svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.9 5-1.3A10 10 0 1 0 12 2zm5.5 14.1c-.2.6-1.2 1.2-1.7 1.2-.4 0-.9.2-3-.9-2.5-1.2-4.1-3.9-4.2-4.1-.1-.2-1-1.3-1-2.5s.6-1.8.9-2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5.2.5.7 1.8.8 1.9.1.1.1.3 0 .5-.3.6-.6.8-.8 1-.1.2-.3.4-.1.7.1.3.7 1.1 1.4 1.8.9.8 1.7 1 2 1.2.3.1.5.1.6-.1.2-.2.7-.8.9-1.1.2-.3.4-.2.6-.1l1.7.8c.5.3.6.4.7.5.1.3.1.9-.1 1.5z"/></svg></span>' +
+        '<div><h3>keep going on whatsapp</h3></div>' +
+      '</div>' +
+      '<p>your co-founder remembers this whole chat. move it to whatsapp and pick up right where you left off — no login, no reset.</p>' +
+      '<div class="inrow">' +
+        '<input id="waPhone" type="tel" inputmode="tel" placeholder="+60 12-345 6789" />' +
+        '<button class="wa-cta" id="waCta">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.9 5-1.3A10 10 0 1 0 12 2z"/></svg>' +
+          'continue on whatsapp</button>' +
+      '</div>';
+    thread.appendChild(card);
+    scrollDown();
+
+    var cta = card.querySelector("#waCta");
+    var phone = card.querySelector("#waPhone");
+    cta.addEventListener("click", function(){
+      var v = (phone.value||"").trim();
+      if (v.length < 6){ phone.focus(); phone.style.borderColor = "#f97316"; return; }
+      cta.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg> sent — check whatsapp';
+      cta.style.filter = "brightness(1.1)";
+      phone.disabled = true;
+      toast("we'll message you on whatsapp", true);
+    });
+
+    // lock composer visually
+    composerWrap.style.opacity = ".45";
+    composerWrap.style.pointerEvents = "none";
+  }
+
+  function send(text){
+    text = (text||"").trim();
+    if (!text || state.busy) return;
+
+    // premium gating
+    var isPremium = state.model.tier === "pro";
+    if (isPremium){
+      if (state.credits <= 0){
+        showWaCard();
+        return;
+      }
+    }
+
+    ensureStarted();
+    addUser(text);
+    input.value = "";
+    autoGrow();
+
+    if (isPremium){
+      state.credits -= 1;
+      updateCredits();
+      if (state.credits === 0){
+        // let this reply finish, then swap to WA card
+        state.busy = true;
+        var reply = pickReply(text);
+        streamReplyThen(reply, function(){ showWaCard(); });
+        updateSendState();
+        return;
+      }
+    } else {
+      toast("free model — this one's on the house");
+    }
+
+    state.busy = true;
+    updateSendState();
+    streamReply(pickReply(text));
+  }
+
+  // variant of streamReply that runs a callback after finishing
+  function streamReplyThen(text, done){
+    var typing = addTyping();
+    setTimeout(function(){
+      var bubble = typing.querySelector(".bubble");
+      bubble.innerHTML = '<span class="body"></span><span class="cursor"></span>';
+      var body = bubble.querySelector(".body");
+      var cursor = bubble.querySelector(".cursor");
+      var words = text.split(/(\s+)/);
+      var i = 0, acc = "";
+      (function tick(){
+        if (i >= words.length){
+          cursor.remove();
+          state.busy = false;
+          updateSendState();
+          if (done) setTimeout(done, 500);
+          return;
+        }
+        acc += words[i]; body.innerHTML = esc(acc); i++;
+        scrollDown();
+        var delay = words[i-1] && /\n/.test(words[i-1]) ? 90 : 26 + Math.random()*34;
+        setTimeout(tick, delay);
+      })();
+    }, 1150 + Math.random()*400);
+  }
+
+  // ---------- composer ux ----------
+  function autoGrow(){
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 160) + "px";
+  }
+  function updateSendState(){
+    var has = input.value.trim().length > 0;
+    sendBtn.disabled = !has || state.busy;
+  }
+
+  input.addEventListener("input", function(){ autoGrow(); updateSendState(); });
+  input.addEventListener("keydown", function(e){
+    if (e.key === "Enter" && !e.shiftKey){
+      e.preventDefault();
+      send(input.value);
+    }
+  });
+  sendBtn.addEventListener("click", function(){ send(input.value); });
+
+  // ---------- chips ----------
+  Array.prototype.forEach.call(document.querySelectorAll(".chip"), function(c){
+    c.addEventListener("click", function(){ send(c.getAttribute("data-prompt")); });
+  });
+
+  // ---------- new chat ----------
+  $("newChat").addEventListener("click", function(){
+    thread.innerHTML = "";
+    thread.style.display = "none";
+    hero.style.display = "flex";
+    state.started = false;
+    composerWrap.style.opacity = "";
+    composerWrap.style.pointerEvents = "";
+    closeDrawer();
+    input.focus();
+  });
+
+  // ---------- model picker ----------
+  var picker = $("picker");
+  $("pickerBtn").addEventListener("click", function(e){
+    e.stopPropagation();
+    picker.classList.toggle("open");
+  });
+  document.addEventListener("click", function(e){
+    if (!picker.contains(e.target)) picker.classList.remove("open");
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".picker-opt"), function(opt){
+    opt.addEventListener("click", function(){
+      var name = opt.getAttribute("data-model");
+      var tier = opt.getAttribute("data-tier");
+      var color = opt.getAttribute("data-color");
+      state.model = { name: name, tier: tier, color: color };
+
+      document.querySelectorAll(".picker-opt").forEach(function(o){ o.classList.remove("selected"); });
+      opt.classList.add("selected");
+
+      $("pickerName").textContent = name;
+      $("pickerBtn").querySelector(".dotico").style.background = color;
+      var badge = $("pickerBadge");
+      if (tier === "pro"){
+        badge.className = "badge pro";
+        badge.innerHTML = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>pro';
+      } else {
+        badge.className = "badge free";
+        badge.textContent = "free";
+      }
+      picker.classList.remove("open");
+      toast(tier === "pro" ? "switched to " + name + " · premium" : "switched to " + name);
+    });
+  });
+
+  // ---------- login modal ----------
+  var scrim = $("loginScrim");
+  function openModal(){ scrim.classList.add("open"); }
+  function closeModal(){ scrim.classList.remove("open"); }
+  $("loginBtn").addEventListener("click", openModal);
+  $("modalClose").addEventListener("click", closeModal);
+  $("continueFree").addEventListener("click", function(){ closeModal(); input.focus(); });
+  scrim.addEventListener("click", function(e){ if (e.target === scrim) closeModal(); });
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape") closeModal(); });
+  Array.prototype.forEach.call(document.querySelectorAll(".opt-row"), function(r){
+    r.addEventListener("click", function(){
+      closeModal();
+      toast("redirecting to connect your subscription...");
+    });
+  });
+
+  // ---------- mobile drawer ----------
+  function openDrawer(){ app.classList.add("drawer-open"); }
+  function closeDrawer(){ app.classList.remove("drawer-open"); }
+  $("hamburger").addEventListener("click", openDrawer);
+  $("drawerScrim").addEventListener("click", closeDrawer);
+  Array.prototype.forEach.call(document.querySelectorAll(".hist-item"), function(h){
+    h.addEventListener("click", function(){
+      document.querySelectorAll(".hist-item").forEach(function(x){ x.classList.remove("active"); });
+      h.classList.add("active");
+      closeDrawer();
+    });
+  });
+
+  // init
+  updateCredits();
+  input.focus();
+})();
+</script>
+</body>
+</html>
